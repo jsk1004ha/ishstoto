@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  min-height: 100vh;
+  background: #06111f;
+  color: #e5f6ff;
+}
+
+::selection {
+  background: rgba(52, 245, 197, 0.35);
+}
+
+.arena-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@layer components {
+  .glass-card {
+    @apply rounded-3xl border border-white/10 bg-white/[0.065] shadow-2xl shadow-black/25 backdrop-blur-xl;
+  }
+  .neon-button {
+    @apply inline-flex min-h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-sky-400 to-emerald-300 px-5 py-3 text-sm font-extrabold text-navy-950 shadow-glow transition hover:scale-[1.02] active:scale-[0.98];
+  }
+  .secondary-button {
+    @apply inline-flex min-h-11 items-center justify-center rounded-2xl border border-white/10 bg-white/10 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/15 active:scale-[0.98];
+  }
+  .danger-button {
+    @apply inline-flex min-h-11 items-center justify-center rounded-2xl border border-red-300/30 bg-red-500/15 px-5 py-3 text-sm font-bold text-red-100 transition hover:bg-red-500/25 active:scale-[0.98];
+  }
+  .input-field {
+    @apply w-full rounded-2xl border border-white/10 bg-navy-950/70 px-4 py-3 text-base text-white placeholder:text-slate-500 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-400/20;
+  }
+  .label {
+    @apply text-sm font-bold text-slate-200;
+  }
+}

@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Production default: PostgreSQL.
+// For local SQLite, copy prisma/schema.sqlite.prisma to prisma/schema.prisma
+// or pass --schema prisma/schema.sqlite.prisma to Prisma commands and set DATABASE_URL="file:./dev.db".
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  BANNED
+}
+
+enum SportType {
+  SOCCER
+  RELAY
+  TUG_OF_WAR
+  BASKETBALL
+  JUMP_ROPE
+}
+
+enum MatchStatus {
+  DRAFT
+  OPEN
+  LOCKED
+  RESULTED
+  CANCELLED
+}
+
+enum PredictionStatus {
+  ACTIVE
+  WON
+  LOST
+  REFUNDED
+}
+
+enum LedgerType {
+  INITIAL_GRANT
+  BET_PLACED
+  BET_WON
+  BET_REFUND
+  ADMIN_ADJUST
+}
+
+enum AdminAction {
+  MATCH_CREATED
+  MATCH_UPDATED
+  MATCH_RESULT_SET
+  MATCH_SETTLED
+  MATCH_CANCELLED
+  POINT_ADJUSTED
+  USER_SANCTIONED
+}
+
+model User {
+  id            String          @id @default(cuid())
+  loginId       String          @unique
+  passwordHash  String
+  nickname      String          @unique
+  realName      String
+  studentNumber String
+  generation    Int
+  role          Role            @default(USER)
+  points        Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  ledgers        PointLedger[]
+  predictions    Prediction[]
+  createdMatches Match[]        @relation("CreatedMatches")
+  auditLogs      AdminAuditLog[] @relation("AdminActor")
+
+  @@index([points])
+  @@index([role])
+}
+
+model PointLedger {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         LedgerType
+  amount       Int
+  balanceAfter Int
+  reason       String
+  matchId      String?
+  match        Match?     @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+
+  @@index([userId, createdAt])
+  @@index([matchId])
+}
+
+model Match {
+  id             String        @id @default(cuid())
+  title          String
+  sportType      SportType
+  description    String?
+  status         MatchStatus   @default(DRAFT)
+  startsAt       DateTime
+  locksAt        DateTime
+  resultOptionId String?
+  settledAt      DateTime?
+  createdBy      String?
+  creator        User?         @relation("CreatedMatches", fields: [createdBy], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  options      MatchOption[]
+  predictions  Prediction[]
+  ledgers      PointLedger[]
+  auditLogs    AdminAuditLog[]
+
+  @@index([status, startsAt])
+  @@index([locksAt])
+}
+
+model MatchOption {
+  id          String       @id @default(cuid())
+  matchId     String
+  match       Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  label       String
+  className   String?
+  color       String?
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+
+  predictions Prediction[]
+
+  @@index([matchId, sortOrder])
+}
+
+model Prediction {
+  id            String           @id @default(cuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchId       String
+  match         Match            @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  optionId      String
+  option        MatchOption      @relation(fields: [optionId], references: [id], onDelete: Restrict)
+  points        Int
+  oddsAtBet     Decimal
+  status        PredictionStatus @default(ACTIVE)
+  revisionCount Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([userId, matchId])
+  @@index([matchId, optionId])
+  @@index([status])
+}
+
+model AdminAuditLog {
+  id        String      @id @default(cuid())
+  actorId   String?
+  actor     User?       @relation("AdminActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action    AdminAction
+  matchId   String?
+  match     Match?      @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  targetId  String?
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([matchId, createdAt])
+}

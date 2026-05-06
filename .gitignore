@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Next.js / build output
+.next/
+out/
+dist/
+.turbo/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+
+# Local databases and generated data
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+prisma/dev.db
+prisma/dev.db-journal
+
+# Test / coverage / caches
+coverage/
+.vitest/
+*.tsbuildinfo
+
+# Platform / editor / local runtime
+.DS_Store
+.vscode/
+.idea/
+.vercel/
+.omx/
