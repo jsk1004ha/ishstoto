@@ -24,7 +24,7 @@ app/                    Next.js App Router 페이지와 Route Handler
   matches/              경기 목록/상세 예측 화면
 components/             공통 UI, 예측 폼, 랭킹, 관리자 폼
 lib/                    세션, Prisma, 리로 인증 어댑터, 배당/정산/환불 로직
-prisma/                 Prisma schema, SQLite helper schema, seed
+prisma/                 Prisma SQLite schema, seed
 __tests__/              배당/정산 단위 테스트
 ```
 
@@ -38,7 +38,7 @@ cp .env.example .env
 `.env` 예시:
 
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ishs_toto?schema=public"
+DATABASE_URL="file:./dev.db"
 SESSION_SECRET="32자-이상의-랜덤-문자열로-교체"
 NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 ALLOW_PREDICTION_REVISION="true"
@@ -46,29 +46,16 @@ MAX_PREDICTION_REVISIONS="1"
 INITIAL_POINTS="1000"
 ```
 
-## PostgreSQL DB 준비
+## SQLite DB 준비
 
 ```bash
-npm run db:generate
-npm run db:migrate
-npm run db:seed
-npm run dev
-```
-
-## SQLite로 빠르게 개발하기
-
-PostgreSQL이 기본 대상입니다. 로컬 SQLite를 쓰려면:
-
-```bash
-cp prisma/schema.sqlite.prisma prisma/schema.prisma
-printf 'DATABASE_URL="file:./dev.db"\nSESSION_SECRET="dev-secret-change-this-32-characters"\n' > .env
 npm run db:generate
 npm run db:push
 npm run db:seed
 npm run dev
 ```
 
-이 저장소의 Prisma 6.19.x 구성에서는 `prisma/schema.sqlite.prisma`로 SQLite `db push`와 seed 실행을 검증했습니다.
+기본 DB는 SQLite입니다. `DATABASE_URL="file:./dev.db"`는 `prisma/schema.prisma` 기준으로 `prisma/dev.db`를 생성하며, 해당 DB 파일은 git에 커밋하지 않습니다.
 
 ## 샘플 계정
 

@@ -16,10 +16,20 @@ export type RiroAuthResult = {
 
 export type RiroAuthAdapter = (input: RiroAuthInput) => Promise<RiroAuthResult>;
 
+const mockProfiles: Record<string, Pick<Extract<RiroAuthResult, { ok: true }>, 'realName' | 'studentNumber' | 'role'>> = {
+  // Local mock profile used until the production RiroSchool adapter is connected.
+  '2510': { realName: '김준서', studentNumber: '2309', role: 'USER' }
+};
+
 function deriveStudentNumber(loginId: string) {
   const digits = loginId.replace(/\D/g, '');
   if (digits.length >= 4) return digits.slice(0, 4);
   return `26${digits.padStart(2, '0')}`;
+}
+
+function deriveGeneration(studentNumber: string) {
+  const generation = Number(`20${studentNumber.slice(0, 2)}`) - 1994 + 1;
+  return Number.isFinite(generation) && generation > 0 ? generation : 0;
 }
 
 export const mockRiroAuth: RiroAuthAdapter = async ({ loginId, password }) => {
@@ -29,15 +39,24 @@ export const mockRiroAuth: RiroAuthAdapter = async ({ loginId, password }) => {
   }
 
   const normalized = loginId.trim().toLowerCase();
+  const profile = mockProfiles[normalized];
+  if (profile) {
+    return {
+      ok: true,
+      ...profile,
+      generation: deriveGeneration(profile.studentNumber)
+    };
+  }
+
   const studentNumber = deriveStudentNumber(normalized);
   // ISHS_Wiki의 check_riro_login 방식처럼 리로 ID 앞 두 자리 연도에서 기수를 유도한다.
-  const generation = Number(`20${studentNumber.slice(0, 2)}`) - 1994 + 1;
+  const generation = deriveGeneration(studentNumber);
 
   return {
     ok: true,
     realName: normalized.startsWith('admin') ? '관리자' : `인증학생${studentNumber}`,
     studentNumber,
-    generation: Number.isFinite(generation) && generation > 0 ? generation : 0,
+    generation,
     role: normalized.startsWith('admin') ? 'ADMIN' : 'USER'
   };
 };

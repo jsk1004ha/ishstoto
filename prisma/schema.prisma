@@ -2,11 +2,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Production default: PostgreSQL.
-// For local SQLite, copy prisma/schema.sqlite.prisma to prisma/schema.prisma
-// or pass --schema prisma/schema.sqlite.prisma to Prisma commands and set DATABASE_URL="file:./dev.db".
+// SQLite is the default datastore.
+// DATABASE_URL="file:./dev.db" creates prisma/dev.db next to this schema.
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
