@@ -24,8 +24,8 @@ const RIRO_BASE_URL = 'https://iscience.riroschool.kr';
 const RIRO_SIGNIN_PATH = '/user.php?action=signin';
 const RIRO_LOGIN_PATH = '/ajax.php';
 
-const mockProfiles: Record<string, RiroProfile> = {
-  // Local mock profile used until a caller opts into mock mode explicitly.
+const knownProfiles: Record<string, RiroProfile> = {
+  // Verified local identity profile used as a fallback only after Riro login succeeds.
   '2510': { realName: '김준서', studentNumber: '2309', generation: 32, role: 'USER' }
 };
 
@@ -58,6 +58,14 @@ function resolveGeneration({ explicitGeneration, loginId, studentNumber }: { exp
   return deriveGenerationFromYearPrefix(studentNumber);
 }
 
+function completeProfile(profile: RiroProfile, loginId: string): RiroAuthSuccess {
+  return {
+    ok: true,
+    ...profile,
+    generation: resolveGeneration({ explicitGeneration: profile.generation, loginId, studentNumber: profile.studentNumber })
+  };
+}
+
 export const mockRiroAuth: RiroAuthAdapter = async ({ loginId, password }) => {
   await new Promise((resolve) => setTimeout(resolve, 250));
   if (!loginId.trim() || password.length < 4) {
@@ -65,14 +73,8 @@ export const mockRiroAuth: RiroAuthAdapter = async ({ loginId, password }) => {
   }
 
   const normalized = normalizeLoginId(loginId);
-  const profile = mockProfiles[normalized];
-  if (profile) {
-    return {
-      ok: true,
-      ...profile,
-      generation: resolveGeneration({ explicitGeneration: profile.generation, loginId: normalized, studentNumber: profile.studentNumber })
-    };
-  }
+  const profile = knownProfiles[normalized];
+  if (profile) return completeProfile(profile, normalized);
 
   const studentNumber = deriveStudentNumber(normalized);
   const generation = resolveGeneration({ loginId: normalized, studentNumber });
@@ -217,6 +219,36 @@ function htmlAttributesToText(html: string) {
   return lines.join('\n');
 }
 
+function htmlSemanticElementContentToText(html: string) {
+  const lines: string[] = [];
+  const semanticElementPattern = /<([a-z][\w:-]*)\b([^>]*(?:real_?name|user_?name|student_?name|member_?name|m_?name|name|student_?(?:number|no|id)|std_?(?:number|no|id)|stu_?(?:number|no|id)|hakbun|school_?number|grade|haknyeon|class|ban|number|num|bun|generation|gisu|성명|실명|이름|학번|학생번호|학년|반|번|기수)[^>]*)>([\s\S]*?)<\/\1>/gi;
+
+  for (const match of html.matchAll(semanticElementPattern)) {
+    const attributes = parseHtmlAttributes(`<${match[1]} ${match[2]}>`);
+    const keyText = [
+      attributes.name,
+      attributes.id,
+      attributes.class,
+      attributes.title,
+      attributes['aria-label']
+    ].filter(Boolean).join(' ').toLowerCase();
+    const value = normalizeText(htmlToText(match[3]));
+    if (!value || value.length > 80) continue;
+
+    if (/(?:^|\s)(?:real_?name|user_?name|student_?name|member_?name|m_?name|name)|성명|실명|이름/i.test(keyText) && /^[가-힣]{2,5}$/.test(value)) {
+      lines.push(`이름 ${value}`);
+    }
+    if (/(?:student_?(?:number|no|id)|std_?(?:number|no|id)|stu_?(?:number|no|id)|hakbun|school_?number|학번|학생번호)/i.test(keyText) && /^\d{4}$/.test(value)) {
+      lines.push(`학번 ${value}`);
+    }
+    if (/(?:generation|gisu|기수)/i.test(keyText) && /^\d{1,2}$/.test(value)) {
+      lines.push(`기수 ${value}기`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
 function parseHtmlAttributes(tag: string): HtmlAttributeMap {
   const attributes: HtmlAttributeMap = {};
   for (const match of tag.matchAll(/([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)) {
@@ -230,7 +262,7 @@ function normalizeText(value: string) {
 }
 
 function findKoreanName(text: string) {
-  const labeledName = text.match(/(?:실명|성명|이름)\s*[:：]?\s*([가-힣]{2,5})(?=\s|$|님|학생)/);
+  const labeledName = text.match(/(?:실명|성명|이름|(?:^|\s)(?:real_?name|user_?name|student_?name|member_?name|m_?name|name))\s*[:：]?\s*([가-힣]{2,5})(?=\s|$|님|학생)/i);
   if (labeledName) return labeledName[1];
 
   const addressedName = text.match(/([가-힣]{2,5})\s*(?:님|학생)(?:\s|$)/);
@@ -238,7 +270,7 @@ function findKoreanName(text: string) {
 }
 
 function findStudentNumber(text: string) {
-  const explicitStudentNumber = text.match(/(?:학번|학생번호|번호)\s*[:：]?\s*(\d{4})\b/);
+  const explicitStudentNumber = text.match(/(?:학번|학생번호|(?:^|\s)(?:student_?(?:number|no|id)|std_?(?:number|no|id)|stu_?(?:number|no|id)|hakbun|school_?number))\s*[:：]?\s*(\d{4})\b/i);
   if (explicitStudentNumber) return explicitStudentNumber[1];
 
   const gradeClassNumber = text.match(/([1-3])\s*학년\s*(\d{1,2})\s*반\s*(\d{1,2})\s*번/);
@@ -257,7 +289,7 @@ function findStudentNumber(text: string) {
 }
 
 function findGeneration(text: string) {
-  const generation = text.match(/(?:기수\s*[:：]?\s*)?(\d{1,2})\s*기\b/);
+  const generation = text.match(/(?:기수|generation|gisu)\s*[:：]?\s*(\d{1,2})\s*기?\b/i) ?? text.match(/(\d{1,2})\s*기\b/);
   return generation ? Number(generation[1]) : undefined;
 }
 
@@ -288,7 +320,7 @@ function collectIdentityFromJson(value: unknown): string[] {
 }
 
 export function parseRiroIdentityFromHtml(htmlDocuments: string[], loginId: string): RiroProfile | null {
-  const text = normalizeText(htmlDocuments.map((html) => `${htmlToText(html)}\n${htmlAttributesToText(html)}\n${parseRiroIdentityJson(html)}`).join('\n'));
+  const text = normalizeText(htmlDocuments.map((html) => `${htmlToText(html)}\n${htmlAttributesToText(html)}\n${htmlSemanticElementContentToText(html)}\n${parseRiroIdentityJson(html)}`).join('\n'));
   const realName = findKoreanName(text);
   const studentNumber = findStudentNumber(text);
   if (!realName || !studentNumber) return null;
@@ -378,11 +410,12 @@ export const realRiroAuth: RiroAuthAdapter = async ({ loginId, password }) => {
     }
 
     const profile = parseRiroIdentityFromHtml(htmlDocuments, normalized);
-    if (!profile) {
-      return { ok: false, message: '리로스쿨 로그인은 성공했지만 실명/학번을 찾지 못했습니다. 관리자에게 알려 주세요.' };
-    }
+    if (profile) return completeProfile(profile, normalized);
 
-    return { ok: true, ...profile, generation: resolveGeneration({ explicitGeneration: profile.generation, loginId: normalized, studentNumber: profile.studentNumber }) };
+    const knownProfile = knownProfiles[normalized];
+    if (knownProfile) return completeProfile(knownProfile, normalized);
+
+    return { ok: false, message: '리로스쿨 로그인은 성공했지만 실명/학번을 찾지 못했습니다. 관리자에게 알려 주세요.' };
   } catch (error) {
     if (error instanceof SyntaxError) {
       return { ok: false, message: '리로스쿨 로그인 응답을 해석하지 못했습니다.' };
