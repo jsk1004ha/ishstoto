@@ -62,14 +62,14 @@ export function RiroVerifyPanel() {
   }
 
   return (
-    <AuthShell title="리로스쿨 본인인증" description="ID/PW는 저장하지 않으며, 실제 배포 시 어댑터만 교체할 수 있습니다.">
+    <AuthShell title="리로스쿨 본인인증" description="인천과학고 리로스쿨 계정으로 실명과 학번을 확인합니다. ID/PW는 저장하지 않습니다.">
       <form onSubmit={onSubmit} className="space-y-4">
         <label className="block"><span className="label">리로스쿨 ID</span><input name="loginId" className="input-field mt-2" autoComplete="username" required /></label>
         <label className="block"><span className="label">리로스쿨 비밀번호</span><input name="password" type="password" className="input-field mt-2" autoComplete="current-password" required /></label>
         {state.message ? <p className="rounded-2xl bg-red-500/15 p-3 text-sm text-red-100">{state.message}</p> : null}
         <button className="neon-button w-full" disabled={state.loading}>{state.loading ? '인증 중...' : '본인인증'}</button>
       </form>
-      <p className="mt-4 text-xs text-slate-400">Mock 인증: 아무 ID와 4자 이상 비밀번호로 통과합니다. admin으로 시작하는 ID는 관리자 권한입니다.</p>
+      <p className="mt-4 text-xs text-slate-400">리로스쿨에 직접 로그인해 실명과 학번을 확인합니다. ID/PW는 저장하지 않습니다.</p>
     </AuthShell>
   );
 }
