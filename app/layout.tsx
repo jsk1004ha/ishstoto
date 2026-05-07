@@ -8,7 +8,10 @@ import { TopNav } from '@/components/top-nav';
 
 export const metadata: Metadata = {
   title: 'ISHS 포인트 승부예측',
-  description: '학교 체육대회 전용 가상 포인트 승부예측 랭킹 사이트'
+  description: '학교 체육대회 전용 가상 포인트 승부예측 랭킹 사이트',
+  icons: {
+    icon: '/ishs-main-icon.svg'
+  }
 };
 
 export const viewport: Viewport = {

@@ -12,6 +12,7 @@ export const SPORT_LABEL: Record<string, string> = {
   RELAY: '계주',
   TUG_OF_WAR: '줄다리기',
   BASKETBALL: '농구',
+  DODGEBALL: '피구',
   JUMP_ROPE: '줄넘기'
 };
 
@@ -20,6 +21,7 @@ export const SPORT_ICON: Record<string, string> = {
   RELAY: '🏃',
   TUG_OF_WAR: '🪢',
   BASKETBALL: '🏀',
+  DODGEBALL: '🏐',
   JUMP_ROPE: '✨'
 };
 

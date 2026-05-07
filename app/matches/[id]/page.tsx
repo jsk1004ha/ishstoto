@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, Clock, UsersRound } from 'lucide-react';
+import { ArrowLeft, Clock, Swords, UsersRound } from 'lucide-react';
 import { Disclaimer } from '@/components/disclaimer';
 import { PredictionForm } from '@/components/prediction-form';
 import { SPORT_ICON, SPORT_LABEL, STATUS_LABEL } from '@/lib/constants';
@@ -16,6 +16,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   const match = await getMatchDetail(id, user?.id);
   if (!match) notFound();
   if (!user) redirect('/login');
+  const displayedOptions = match.optionPools;
 
   return (
     <div className="space-y-5 py-4">
@@ -23,8 +24,9 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
       <section className="glass-card p-5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-2xl bg-white/10 px-3 py-1 text-2xl">{SPORT_ICON[match.sportType]}</span>
-          <span className="rounded-full bg-sky-300/15 px-3 py-1 text-xs font-black text-sky-100">{SPORT_LABEL[match.sportType]}</span>
-          <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-200">{STATUS_LABEL[match.status]}</span>
+          <span className="status-pill border-sky-300/20 bg-sky-300/15 text-sky-100">{SPORT_LABEL[match.sportType]}</span>
+          <span className="status-pill text-slate-200">{STATUS_LABEL[match.status]}</span>
+          <span className="status-pill border-orange-300/20 bg-orange-300/10 text-orange-100">무승부 없음</span>
         </div>
         <h1 className="mt-4 text-3xl font-black text-white">{match.title}</h1>
         {match.description ? <p className="mt-2 text-sm leading-relaxed text-slate-300">{match.description}</p> : null}
@@ -37,13 +39,14 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
 
       <div className="grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
         <section className="glass-card p-5">
-          <h2 className="text-xl font-black text-white">선택지별 현황</h2>
+          <h2 className="flex items-center gap-2 text-xl font-black text-white"><Swords size={20} /> 선택지별 배당 현황</h2>
+          <p className="mt-1 text-sm text-slate-400">선택지 중 승리팀 하나만 정산합니다.</p>
           <div className="mt-4 space-y-3">
-            {match.optionPools.map((option) => (
-              <div key={option.id} className="rounded-2xl bg-navy-950/60 p-4">
+            {displayedOptions.map((option) => (
+              <div key={option.id} className="rounded-2xl border border-white/10 bg-navy-950/60 p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="flex items-center gap-2 font-black text-white"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: option.color ?? '#38bdf8' }} />{option.label}</p>
-                  <p className="font-black text-neon-orange">{option.odds ? `x${option.odds.toFixed(2)}` : '예측 대기'}</p>
+                  <p className="flex items-center gap-2 font-black text-white"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: option.color ?? '#38bdf8' }} />{winLabel(option.label)}</p>
+                  <p className="text-xl font-black text-neon-orange">{formatOdds(option.odds)}</p>
                 </div>
                 <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full" style={{ width: `${option.percentage}%`, backgroundColor: option.color ?? '#38bdf8' }} /></div>
                 <p className="mt-2 text-xs text-slate-400">{formatPoints(option.points)} · {option.participants}명 · {option.percentage.toFixed(1)}%</p>
@@ -86,4 +89,12 @@ function Info({ title, value, icon }: { title: string; value: string; icon: Reac
       <p className="mt-1 font-black text-white">{value}</p>
     </div>
   );
+}
+
+function formatOdds(odds: number | null) {
+  return odds ? `x${odds.toFixed(2)}` : '예측 대기';
+}
+
+function winLabel(label: string) {
+  return /승$/.test(label) ? label : `${label} 승`;
 }

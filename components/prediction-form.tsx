@@ -39,6 +39,7 @@ export function PredictionForm({ matchId, status, options, totalPoints, userPoin
 
   const isOpen = status === 'OPEN';
   const selected = options.find((option) => option.id === selectedOption);
+  const displayedOptions = options;
   const expected = useMemo(() => {
     if (!selected || points <= 0) return { odds: null, payout: 0 };
     const ownOldPoints = myPrediction?.points ?? 0;
@@ -48,6 +49,17 @@ export function PredictionForm({ matchId, status, options, totalPoints, userPoin
     const odds = adjustedOption > 0 ? adjustedTotal / adjustedOption : null;
     return { odds, payout: odds ? Math.floor(points * odds) : 0 };
   }, [selected, points, totalPoints, myPrediction]);
+  const projectedOptions = useMemo(() => {
+    const ownOldPoints = myPrediction?.points ?? 0;
+    const adjustedTotal = Math.max(0, totalPoints - ownOldPoints) + points;
+    return displayedOptions.map((option) => {
+      const oldOptionPoints = myPrediction?.optionId === option.id ? ownOldPoints : 0;
+      const addedPoints = selectedOption === option.id ? points : 0;
+      const adjustedOption = Math.max(0, option.points - oldOptionPoints) + addedPoints;
+      const odds = adjustedOption > 0 ? adjustedTotal / adjustedOption : option.odds;
+      return { ...option, projectedOdds: odds };
+    });
+  }, [displayedOptions, myPrediction, points, selectedOption, totalPoints]);
 
   async function submitPrediction() {
     setLoading(true);
@@ -78,7 +90,7 @@ export function PredictionForm({ matchId, status, options, totalPoints, userPoin
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-black text-white">예측 참여</h2>
-          <p className="mt-1 text-sm text-slate-400">선택지와 사용할 가상 포인트를 고르세요.</p>
+          <p className="mt-1 text-sm text-slate-400">무승부 없이 선택지 중 승리팀 하나를 고르세요.</p>
         </div>
         <div className="rounded-2xl bg-emerald-300/10 px-4 py-2 text-right">
           <p className="text-xs text-slate-400">내 포인트</p>
@@ -93,7 +105,7 @@ export function PredictionForm({ matchId, status, options, totalPoints, userPoin
       ) : null}
 
       <div className="mt-5 grid gap-3">
-        {options.map((option) => {
+        {displayedOptions.map((option) => {
           const selected = selectedOption === option.id;
           return (
             <motion.button
@@ -109,8 +121,8 @@ export function PredictionForm({ matchId, status, options, totalPoints, userPoin
               )}
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2 font-black text-white"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: option.color ?? '#38bdf8' }} />{option.label}</span>
-                <span className="text-sm font-bold text-neon-orange">{option.odds ? `x${option.odds.toFixed(2)}` : '예측 대기'}</span>
+                <span className="flex items-center gap-2 font-black text-white"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: option.color ?? '#38bdf8' }} />{winLabel(option.label)}</span>
+                <span className="text-sm font-bold text-neon-orange">{formatOdds(option.odds)}</span>
               </div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
                 <div className="h-full rounded-full" style={{ width: `${option.percentage}%`, backgroundColor: option.color ?? '#38bdf8' }} />
@@ -119,6 +131,24 @@ export function PredictionForm({ matchId, status, options, totalPoints, userPoin
             </motion.button>
           );
         })}
+      </div>
+
+      <div className="mt-4 rounded-3xl border border-white/10 bg-navy-950/70 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-black text-white">선택지별 예상 배당</p>
+          <p className="text-xs font-bold text-slate-400">선택 금액 반영</p>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {projectedOptions.map((option) => (
+            <div key={option.id} className={clsx('rounded-2xl border px-3 py-2', option.id === selectedOption ? 'border-orange-300/40 bg-orange-300/10' : 'border-white/10 bg-white/5')}>
+              <p className="flex items-center gap-2 text-sm font-black text-white">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: option.color ?? '#38bdf8' }} />
+                {winLabel(option.label)}
+              </p>
+              <p className="mt-1 text-xl font-black text-neon-orange">{formatOdds(option.projectedOdds)}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="mt-6">
@@ -166,7 +196,7 @@ export function PredictionForm({ matchId, status, options, totalPoints, userPoin
           <motion.div className="fixed inset-0 z-[70] grid place-items-end bg-black/70 p-4 backdrop-blur-sm sm:place-items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="glass-card w-full max-w-md p-5" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 30, opacity: 0 }}>
               <h3 className="text-xl font-black text-white">예측을 확정할까요?</h3>
-              <p className="mt-2 text-sm text-slate-300">{selected?.label} 선택지에 {formatPoints(points)}를 사용합니다.</p>
+              <p className="mt-2 text-sm text-slate-300">{selected ? winLabel(selected.label) : '선택지'}에 {formatPoints(points)}를 사용합니다.</p>
               <div className="mt-4 rounded-2xl border border-orange-300/20 bg-orange-300/10 p-3 text-xs leading-relaxed text-orange-50">
                 {POINT_DISCLAIMER}
               </div>
@@ -180,4 +210,12 @@ export function PredictionForm({ matchId, status, options, totalPoints, userPoin
       </AnimatePresence>
     </section>
   );
+}
+
+function formatOdds(odds: number | null) {
+  return odds ? `x${odds.toFixed(2)}` : '예측 대기';
+}
+
+function winLabel(label: string) {
+  return /승$/.test(label) ? label : `${label} 승`;
 }

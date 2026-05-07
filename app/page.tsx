@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Trophy, Target, Medal } from 'lucide-react';
+import { Medal, ShieldCheck, Swords, Target, Trophy } from 'lucide-react';
+import { BrandMark } from '@/components/brand-mark';
 import { MatchCard } from '@/components/match-card';
 import { Disclaimer } from '@/components/disclaimer';
 import { EmptyState } from '@/components/empty-state';
@@ -17,15 +18,27 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-6 py-4">
-      <section className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
-        <div className="glass-card overflow-hidden p-6">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-neon-mint">Interclass Sports Arena</p>
-          <h1 className="mt-4 text-4xl font-black tracking-tight text-white sm:text-5xl">
-            체육대회 승부예측,<br />가상 포인트로 랭킹 경쟁!
-          </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
-            경기별 예측 현황, 퍼센트, 참여 인원, 실시간 가상 배당을 확인하고 교내 이벤트용 포인트 랭킹에 도전하세요.
-          </p>
+      <section className="grid gap-4 lg:grid-cols-[1.38fr_0.62fr]">
+        <div className="glass-card relative overflow-hidden p-6 sm:p-7">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-300 via-emerald-300 to-orange-300" />
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-black uppercase text-neon-mint"><Swords size={16} /> Interclass Sports Arena</p>
+              <h1 className="mt-4 text-4xl font-black text-white sm:text-5xl">
+                체육대회 승부예측,<br />가상 포인트로 랭킹 경쟁!
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
+                무승부 없이 선택지별 승리 배당을 확인하고, 교내 이벤트용 가상 포인트로 안전하게 랭킹에 도전하세요.
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-3 rounded-3xl border border-white/10 bg-navy-950/65 p-3">
+              <BrandMark size="lg" />
+              <div className="hidden sm:block">
+                <p className="text-xs font-black text-sky-100">OFFICIAL</p>
+                <p className="text-sm font-black text-white">ISHS ARENA</p>
+              </div>
+            </div>
+          </div>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href={user ? '/matches' : '/riro-verify'} className="neon-button"><Target className="mr-2" size={18} />예측 참여</Link>
             <Link href="/ranking" className="secondary-button"><Medal className="mr-2" size={18} />랭킹 보기</Link>
@@ -38,9 +51,14 @@ export default async function HomePage() {
         </div>
         <div className="space-y-4">
           <div className="glass-card p-5">
-            <p className="text-sm font-black text-sky-200">현재 접속</p>
-            <p className="mt-2 text-2xl font-black text-white">{user?.nickname ?? '게스트'}</p>
-            <p className="mt-1 text-sm text-slate-400">{user ? `${formatPoints(user.points)} 보유` : '로그인하면 포인트와 내 순위가 표시됩니다.'}</p>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-black text-sky-200">내 정보</p>
+                <p className="mt-2 text-2xl font-black text-white">{user?.nickname ?? '게스트'}</p>
+                <p className="mt-1 text-sm text-slate-400">{user ? `${formatPoints(user.points)} 보유` : '로그인하면 포인트와 내 순위가 표시됩니다.'}</p>
+              </div>
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-sky-300/15 text-sky-100"><ShieldCheck size={22} /></div>
+            </div>
           </div>
           <div className="glass-card p-5">
             <div className="flex items-center gap-2 text-sky-100"><Trophy size={18} /><p className="font-black">TOP 3</p></div>
@@ -60,8 +78,9 @@ export default async function HomePage() {
       <section>
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
-            <p className="text-sm font-black text-neon-orange">Live Pool</p>
+            <p className="text-sm font-black text-neon-orange">Two-side Live Pool</p>
             <h2 className="text-2xl font-black text-white">현재 승부 예측 현황</h2>
+            <p className="mt-1 text-sm text-slate-400">각 경기 카드에서 선택지별 배당을 따로 확인할 수 있습니다.</p>
           </div>
           <Link href="/matches" className="secondary-button hidden sm:inline-flex">전체 보기</Link>
         </div>

@@ -1,6 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import { computePools } from '@/lib/betting';
 
+function effectiveStatus(status: string, locksAt: Date) {
+  if (status === 'OPEN' && locksAt <= new Date()) return 'LOCKED';
+  return status;
+}
+
 export async function getRanking(userId?: string) {
   const users = await prisma.user.findMany({
     where: { role: { not: 'BANNED' } },
@@ -54,7 +59,7 @@ export async function getMatchSummaries(userId?: string) {
       title: match.title,
       sportType: match.sportType,
       description: match.description,
-      status: match.status,
+      status: effectiveStatus(match.status, match.locksAt),
       startsAt: match.startsAt,
       locksAt: match.locksAt,
       resultOptionId: match.resultOptionId,
@@ -86,6 +91,7 @@ export async function getMatchDetail(id: string, userId?: string) {
 
   return {
     ...match,
+    status: effectiveStatus(match.status, match.locksAt),
     totalPoints: pools.totalPoints,
     totalParticipants: pools.totalParticipants,
     optionPools: pools.optionPools,

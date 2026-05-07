@@ -46,9 +46,9 @@ export const matchOptionSchema = z.object({
 
 const matchBaseSchema = z.object({
   title: z.string().trim().min(2).max(80),
-  sportType: z.enum(['SOCCER', 'RELAY', 'TUG_OF_WAR', 'BASKETBALL', 'JUMP_ROPE']),
+  sportType: z.enum(['SOCCER', 'RELAY', 'TUG_OF_WAR', 'BASKETBALL', 'DODGEBALL', 'JUMP_ROPE']),
   description: z.string().trim().max(500).optional().nullable(),
-  options: z.array(matchOptionSchema).min(2).max(8),
+  options: z.array(matchOptionSchema).min(2, '선택지는 최소 2개 이상 등록해야 합니다.').max(8, '선택지는 최대 8개까지 등록할 수 있습니다.'),
   startsAt: z.coerce.date(),
   locksAt: z.coerce.date(),
   status: z.enum(['DRAFT', 'OPEN', 'LOCKED']).default('DRAFT')

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
-import { Clock, UsersRound, Zap } from 'lucide-react';
+import { Clock, Swords, UsersRound, Zap } from 'lucide-react';
 import { SPORT_ICON, SPORT_LABEL, STATUS_LABEL } from '@/lib/constants';
 import { formatDateTime, formatPoints } from '@/lib/format';
 
@@ -34,6 +34,7 @@ type MatchSummary = {
 export function MatchCard({ match, index = 0 }: { match: MatchSummary; index?: number }) {
   const isOpen = match.status === 'OPEN';
   const selectedLabel = match.options.find((option) => option.id === match.myPrediction?.optionId)?.label;
+  const displayedOptions = match.options;
 
   return (
     <motion.article
@@ -46,17 +47,18 @@ export function MatchCard({ match, index = 0 }: { match: MatchSummary; index?: n
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-2xl bg-white/10 px-3 py-1 text-lg">{SPORT_ICON[match.sportType]}</span>
-            <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold text-sky-100">
+            <span className="status-pill text-sky-100">
               {SPORT_LABEL[match.sportType] ?? match.sportType}
             </span>
-            <span className={clsx('rounded-full px-3 py-1 text-xs font-black', isOpen ? 'bg-emerald-300/15 text-emerald-200' : 'bg-slate-500/15 text-slate-300')}>
+            <span className={clsx('status-pill', isOpen ? 'border-emerald-300/20 bg-emerald-300/15 text-emerald-200' : 'text-slate-300')}>
               {STATUS_LABEL[match.status] ?? match.status}
             </span>
+            <span className="status-pill border-orange-300/20 bg-orange-300/10 text-orange-100">무승부 없음</span>
           </div>
-          <h2 className="mt-3 text-xl font-black tracking-tight text-white">{match.title}</h2>
+          <h2 className="mt-3 text-xl font-black text-white">{match.title}</h2>
           {match.description ? <p className="mt-1 line-clamp-2 text-sm text-slate-400">{match.description}</p> : null}
         </div>
-        <div className="text-right">
+        <div className="rounded-2xl border border-white/10 bg-navy-950/70 px-3 py-2 text-right">
           <p className="text-xs text-slate-400">총 풀</p>
           <p className="text-lg font-black text-neon-mint">{formatPoints(match.totalPoints)}</p>
         </div>
@@ -69,36 +71,47 @@ export function MatchCard({ match, index = 0 }: { match: MatchSummary; index?: n
         {selectedLabel ? <div className="font-bold text-orange-200">내 선택: {selectedLabel} · {formatPoints(match.myPrediction?.points ?? 0)}</div> : null}
       </div>
 
-      <div className="mt-5 space-y-3">
-        {match.options.map((option) => (
-          <motion.div key={option.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="rounded-2xl bg-navy-950/55 p-3">
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: option.color ?? '#38bdf8' }} />
-                <span className="truncate font-black text-white">{option.label}</span>
-              </div>
-              <div className="text-right text-xs">
-                <span className="font-bold text-sky-100">{formatPoints(option.points)}</span>
-                <span className="ml-2 text-slate-400">{option.participants}명</span>
-              </div>
-            </div>
-            <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/10">
+      <div className="mt-5 rounded-3xl border border-white/10 bg-navy-950/55 p-3">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="flex items-center gap-2 text-sm font-black text-white"><Swords size={16} /> 선택지별 배당</p>
+          <p className="text-xs font-bold text-slate-400">승리팀 하나만 선택</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {displayedOptions.map((option) => {
+            const selected = option.id === match.myPrediction?.optionId;
+            return (
               <motion.div
-                className="h-full rounded-full"
-                style={{ background: `linear-gradient(90deg, ${option.color ?? '#38bdf8'}, rgba(255,255,255,0.8))` }}
-                initial={{ width: 0 }}
-                animate={{ width: `${option.percentage}%` }}
-                transition={{ duration: 0.7, ease: 'easeOut' }}
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
-              <span>{option.percentage.toFixed(1)}%</span>
-              <motion.span key={`${option.id}-${option.odds}`} initial={{ scale: 1.12 }} animate={{ scale: 1 }} className="font-black text-neon-orange">
-                {option.odds ? `현재 배당 x${option.odds.toFixed(2)}` : '예측 대기'}
-              </motion.span>
-            </div>
-          </motion.div>
-        ))}
+                key={option.id}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className={clsx('rounded-2xl border p-3', selected ? 'border-orange-300/40 bg-orange-300/10' : 'border-white/10 bg-white/[0.055]')}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="flex min-w-0 items-center gap-2 font-black text-white">
+                      <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: option.color ?? '#38bdf8' }} />
+                      <span className="truncate">{winLabel(option.label)}</span>
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">{formatPoints(option.points)} · {option.participants}명</p>
+                  </div>
+                  <motion.p key={`${option.id}-${option.odds}`} initial={{ scale: 1.12 }} animate={{ scale: 1 }} className="text-lg font-black text-neon-orange">
+                    {formatOdds(option.odds)}
+                  </motion.p>
+                </div>
+                <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/10">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: `linear-gradient(90deg, ${option.color ?? '#38bdf8'}, rgba(255,255,255,0.82))` }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${option.percentage}%` }}
+                    transition={{ duration: 0.7, ease: 'easeOut' }}
+                  />
+                </div>
+                <p className="mt-2 text-right text-xs font-bold text-slate-400">{option.percentage.toFixed(1)}%</p>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="mt-5 flex gap-2">
@@ -109,4 +122,12 @@ export function MatchCard({ match, index = 0 }: { match: MatchSummary; index?: n
       </div>
     </motion.article>
   );
+}
+
+function formatOdds(odds: number | null) {
+  return odds ? `x${odds.toFixed(2)}` : '대기';
+}
+
+function winLabel(label: string) {
+  return /승$/.test(label) ? label : `${label} 승`;
 }

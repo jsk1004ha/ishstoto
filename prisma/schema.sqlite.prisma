@@ -20,6 +20,7 @@ enum SportType {
   RELAY
   TUG_OF_WAR
   BASKETBALL
+  DODGEBALL
   JUMP_ROPE
 }
 
